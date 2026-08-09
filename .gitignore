@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+*.tex
+
+# GeoJEPA / LeWM local artifacts
+stablewm_home/
+le-wm/outputs/
+le-wm/multirun/
+le-wm/wandb/
+le-wm/*.mp4
+le-wm/*results*.txt
+*.ckpt
+*.pt
+*.h5
+*.lance
+logs/
+
+
