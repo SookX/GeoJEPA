@@ -10,8 +10,8 @@
 #   EPOCHS=5 MAX_TRAIN_BATCHES=4000 BATCH_SIZE=64 sbatch ...
 
 #SBATCH --partition=common
-#SBATCH --qos=bg-eng-1
-#SBATCH --account=bg-eng-1
+#SBATCH --qos=bg-eng-01
+#SBATCH --account=bg-eng-01
 #SBATCH --job-name=lewm_reacher
 #SBATCH --time=04:00:00
 #SBATCH --nodes=1
@@ -28,7 +28,7 @@ module purge
 module load anaconda3
 module load nvidia/cuda/12
 
-PROJECT_DIR="${PROJECT_DIR:-/valhalla/projects/bg-eng-1/GeoJEPA}"
+PROJECT_DIR="${PROJECT_DIR:-/valhalla/projects/bg-eng-01/GeoJEPA}"
 LEWM_DIR="${LEWM_DIR:-${PROJECT_DIR}/le-wm}"
 VIRTUAL_ENV="${VIRTUAL_ENV:-${PROJECT_DIR}/.venv}"
 STABLEWM_HOME="${STABLEWM_HOME:-${PROJECT_DIR}/stablewm_home}"
@@ -51,6 +51,7 @@ NUM_PREDS="${NUM_PREDS:-1}"
 PRECISION="${PRECISION:-bf16}"
 DATASET_NAME="${DATASET_NAME:-dmc/reacher_random.h5}"
 RUN_SMOKE="${RUN_SMOKE:-1}"
+MODEL_CONFIG="${MODEL_CONFIG:-lewm}"
 
 [ -d "${PROJECT_DIR}" ] || { echo "Missing PROJECT_DIR=${PROJECT_DIR}"; exit 1; }
 [ -d "${LEWM_DIR}" ] || { echo "Missing LEWM_DIR=${LEWM_DIR}"; exit 1; }
@@ -119,10 +120,10 @@ DATASET_NAME="${DATASET_NAME}" \
 OUTPUT_MODEL_NAME="${OUTPUT_MODEL_NAME}" \
 RUN_ID="${RUN_ID}" \
 RUN_SMOKE="${RUN_SMOKE}" \
+MODEL_CONFIG="${MODEL_CONFIG}" \
 PYTHON="${PYTHON}" \
 ROOT_DIR="${PROJECT_DIR}" \
 LEWM_DIR="${LEWM_DIR}" \
 STABLEWM_HOME="${STABLEWM_HOME}" \
 LOCAL_DATASET_DIR="${LOCAL_DATASET_DIR}" \
 bash scripts/train_reacher_ablation.sh
-

@@ -24,10 +24,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--history-size", type=int, default=3)
     parser.add_argument("--num-preds", type=int, default=1)
     parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--model-config", default=os.environ.get("MODEL_CONFIG", "lewm"))
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"])
     parser.add_argument("--precision", default="bf16", choices=["bf16", "fp32"])
     parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument("--sigreg-weight", type=float, default=0.09)
+    parser.add_argument("--value-weight", type=float, default=float(os.environ.get("VALUE_WEIGHT", "0") or 0))
+    parser.add_argument("--value-gamma", type=float, default=float(os.environ.get("VALUE_GAMMA", "0.99") or 0.99))
+    parser.add_argument("--value-horizon", default=os.environ.get("VALUE_HORIZON", ""))
+    parser.add_argument("--planning-value-weight", default=os.environ.get("PLANNING_VALUE_WEIGHT", ""))
+    parser.add_argument("--planning-value-gamma", default=os.environ.get("PLANNING_VALUE_GAMMA", ""))
+    parser.add_argument("--geo-aniso-weight", default=os.environ.get("GEO_ANISO_WEIGHT", ""))
+    parser.add_argument("--geo-scale-weight", default=os.environ.get("GEO_SCALE_WEIGHT", ""))
+    parser.add_argument("--geo-resolution", default=os.environ.get("GEO_RESOLUTION", ""))
+    parser.add_argument("--geo-weight", default=os.environ.get("GEO_WEIGHT", ""))
+    parser.add_argument("--geo-alpha-weight", default=os.environ.get("GEO_ALPHA_WEIGHT", ""))
+    parser.add_argument("--geo-alpha-tau", default=os.environ.get("GEO_ALPHA_TAU", ""))
+    parser.add_argument("--geo-alpha-min", default=os.environ.get("GEO_ALPHA_MIN", ""))
+    parser.add_argument("--geo-alpha0", default=os.environ.get("GEO_ALPHA0", ""))
+    parser.add_argument("--geo-teacher-weight", default=os.environ.get("GEO_TEACHER_WEIGHT", ""))
+    parser.add_argument("--geo-teacher-model-path", default=os.environ.get("GEO_TEACHER_MODEL_PATH", ""))
+    parser.add_argument("--geo-k", default=os.environ.get("GEO_K", ""))
+    parser.add_argument("--geo-max-points", default=os.environ.get("GEO_MAX_POINTS", ""))
+    parser.add_argument("--geo-target", default=os.environ.get("GEO_TARGET", ""))
+    parser.add_argument("--geo-action-basis", default=os.environ.get("GEO_ACTION_BASIS", ""))
+    parser.add_argument("--geo-frameskip", default=os.environ.get("GEO_FRAMESKIP", ""))
+    parser.add_argument("--init-model-path", default=os.environ.get("INIT_MODEL_PATH", ""))
+    parser.add_argument("--dataset-num-steps", default=os.environ.get("DATASET_NUM_STEPS", ""))
+    parser.add_argument("--dataset-keys-to-load", default=os.environ.get("DATASET_KEYS_TO_LOAD", ""))
+    parser.add_argument("--dataset-keys-to-cache", default=os.environ.get("DATASET_KEYS_TO_CACHE", ""))
     parser.add_argument("--skip-normalizers", action="store_true")
     parser.add_argument("--output-json", default=None)
     return parser.parse_args()
@@ -97,7 +122,57 @@ def main() -> None:
         f"history_size={args.history_size}",
         f"num_preds={args.num_preds}",
         f"loss.sigreg.weight={args.sigreg_weight}",
+        f"model={args.model_config}",
     ]
+    if args.value_weight > 0:
+        overrides.extend([
+            f"+loss.value.weight={args.value_weight}",
+            f"+loss.value.gamma={args.value_gamma}",
+        ])
+        if args.value_horizon:
+            overrides.append(f"+loss.value.horizon={args.value_horizon}")
+    if args.planning_value_weight:
+        overrides.append(f"model.planning_value_weight={args.planning_value_weight}")
+    if args.planning_value_gamma:
+        overrides.append(f"model.planning_value_gamma={args.planning_value_gamma}")
+    if args.geo_aniso_weight:
+        overrides.append(f"+loss.geo.aniso_weight={args.geo_aniso_weight}")
+    if args.geo_scale_weight:
+        overrides.append(f"+loss.geo.scale_weight={args.geo_scale_weight}")
+    if args.geo_resolution:
+        overrides.append(f"+loss.geo.resolution={args.geo_resolution}")
+    if args.geo_weight:
+        overrides.append(f"+loss.geo.weight={args.geo_weight}")
+    if args.geo_alpha_weight:
+        overrides.append(f"+loss.geo.alpha_weight={args.geo_alpha_weight}")
+    if args.geo_alpha_tau:
+        overrides.append(f"+loss.geo.alpha_tau={args.geo_alpha_tau}")
+    if args.geo_alpha_min:
+        overrides.append(f"model.alpha_head.alpha_min={args.geo_alpha_min}")
+    if args.geo_alpha0:
+        overrides.append(f"+loss.geo.alpha0={args.geo_alpha0}")
+    if args.geo_teacher_weight:
+        overrides.append(f"+loss.geo.teacher_weight={args.geo_teacher_weight}")
+    if args.geo_teacher_model_path:
+        overrides.append(f"+loss.geo.teacher_model_path={args.geo_teacher_model_path}")
+    if args.geo_k:
+        overrides.append(f"+loss.geo.k={args.geo_k}")
+    if args.geo_max_points:
+        overrides.append(f"+loss.geo.max_points={args.geo_max_points}")
+    if args.geo_target:
+        overrides.append(f"+loss.geo.target={args.geo_target}")
+    if args.geo_action_basis:
+        overrides.append(f"+loss.geo.action_basis={args.geo_action_basis}")
+    if args.geo_frameskip:
+        overrides.append(f"+loss.geo.frameskip={args.geo_frameskip}")
+    if args.init_model_path:
+        overrides.append(f"+init_model_path={args.init_model_path}")
+    if args.dataset_num_steps:
+        overrides.append(f"data.dataset.num_steps={args.dataset_num_steps}")
+    if args.dataset_keys_to_load:
+        overrides.append(f"data.dataset.keys_to_load=[{args.dataset_keys_to_load}]")
+    if args.dataset_keys_to_cache:
+        overrides.append(f"data.dataset.keys_to_cache=[{args.dataset_keys_to_cache}]")
 
     with hydra.initialize_config_dir(version_base=None, config_dir=str(lewm_dir / "config" / "train")):
         cfg = hydra.compose(config_name="lewm", overrides=overrides)
@@ -109,7 +184,7 @@ def main() -> None:
     transforms = [get_img_preprocessor(source="pixels", target="pixels", img_size=cfg.img_size)]
     if not args.skip_normalizers:
         for col in cfg.data.dataset.keys_to_load:
-            if not col.startswith("pixels"):
+            if not col.startswith("pixels") and col != "reward":
                 transforms.append(get_column_normalizer(dataset, col, col))
     dataset.transform = spt.data.transforms.Compose(*transforms)
 
@@ -127,6 +202,20 @@ def main() -> None:
 
     device = torch.device(args.device)
     model = hydra.utils.instantiate(cfg.model).to(device)
+    if args.init_model_path:
+        pretrained = swm.wm.utils.load_pretrained(args.init_model_path, cache_dir=cache_dir).to(device)
+        incompatible = model.load_state_dict(pretrained.state_dict(), strict=False)
+        print(
+            "initialized_from="
+            f"{args.init_model_path} missing={list(incompatible.missing_keys)} "
+            f"unexpected={list(incompatible.unexpected_keys)}",
+            flush=True,
+        )
+    if args.geo_teacher_model_path:
+        geo_teacher = swm.wm.utils.load_pretrained(args.geo_teacher_model_path, cache_dir=cache_dir).to(device)
+        geo_teacher.eval().requires_grad_(False)
+        object.__setattr__(model, "geo_teacher", geo_teacher)
+        print(f"geo_teacher={args.geo_teacher_model_path}", flush=True)
 
     class SmokeModule:
         def __init__(self, model, sigreg):
@@ -176,6 +265,11 @@ def main() -> None:
             "grad_norm": grad_norm,
             "grad_params": grad_params,
         }
+        for key, value in output.items():
+            if key.endswith("_loss") and key not in row and torch.is_tensor(value):
+                row[key] = float(value.detach().cpu())
+            elif key.startswith("geo_") and torch.is_tensor(value):
+                row[key] = float(value.detach().cpu())
         history.append(row)
         print(json.dumps(row, sort_keys=True), flush=True)
 
@@ -200,5 +294,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
