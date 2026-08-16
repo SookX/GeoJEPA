@@ -218,9 +218,13 @@ __marimo__/
 .streamlit/secrets.toml
 
 *.tex
+!current.tex
 
 # GeoJEPA / LeWM local artifacts
 stablewm_home/
+le-wm/
+K*/
+*-K*/
 le-wm/outputs/
 le-wm/multirun/
 le-wm/wandb/
